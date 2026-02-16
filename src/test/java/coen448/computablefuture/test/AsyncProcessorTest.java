@@ -97,5 +97,43 @@ public class AsyncProcessorTest {
             List.of(failing), List.of("msg1"));
         assertDoesNotThrow(() -> future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
-    // TODO: Add tests for Fail-Soft policy (Task C)
+    // ============================================================================
+    // FAIL-SOFT TESTS (Task C)
+    // ============================================================================
+
+    @Test
+    public void testFailSoft_AllServicesSucceed() throws Exception {
+        Microservice s1 = new Microservice("S1");
+        Microservice s2 = new Microservice("S2");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<String> future = processor.processAsyncFailSoft(
+            List.of(s1, s2), List.of("msg1", "msg2"), "FALLBACK");
+        String result = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertTrue(result.contains("S1:MSG1"));
+        assertTrue(result.contains("S2:MSG2"));
+        assertFalse(result.contains("FALLBACK"));
+    }
+
+    @Test
+    public void testFailSoft_OneServiceFails_UsesFallback() throws Exception {
+        Microservice s1 = new Microservice("S1");
+        Microservice failing = new FailingMicroservice("FAIL");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<String> future = processor.processAsyncFailSoft(
+            List.of(s1, failing), List.of("msg1", "msg2"), "FALLBACK");
+        String result = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertTrue(result.contains("S1:MSG1"));
+        assertTrue(result.contains("FALLBACK"));
+    }
+
+    @Test
+    public void testFailSoft_AlwaysCompletesNormally() {
+        Microservice failing1 = new FailingMicroservice("FAIL1");
+        Microservice failing2 = new FailingMicroservice("FAIL2");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<String> future = processor.processAsyncFailSoft(
+            List.of(failing1, failing2), List.of("msg1", "msg2"), "FALLBACK");
+        assertDoesNotThrow(() -> future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    }
+
 }
