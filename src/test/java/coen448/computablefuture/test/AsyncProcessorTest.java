@@ -60,5 +60,42 @@ public class AsyncProcessorTest {
         assertDoesNotThrow(() -> future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
     // TODO: Add tests for Fail-Partial policy (Task B)
+
+    // ============================================================================
+    // FAIL-PARTIAL TESTS (Task B)
+    // ============================================================================
+
+    @Test
+    public void testFailPartial_AllServicesSucceed() throws Exception {
+        Microservice s1 = new Microservice("S1");
+        Microservice s2 = new Microservice("S2");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<List<String>> future = processor.processAsyncFailPartial(
+            List.of(s1, s2), List.of("msg1", "msg2"));
+        List<String> results = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertEquals(2, results.size());
+        assertTrue(results.stream().anyMatch(r -> r.contains("S1:MSG1")));
+    }
+
+    @Test
+    public void testFailPartial_OneServiceFails() throws Exception {
+        Microservice s1 = new Microservice("S1");
+        Microservice failing = new FailingMicroservice("FAIL");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<List<String>> future = processor.processAsyncFailPartial(
+            List.of(s1, failing), List.of("msg1", "msg2"));
+        List<String> results = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertEquals(1, results.size());
+        assertTrue(results.get(0).contains("S1:MSG1"));
+    }
+
+    @Test
+    public void testFailPartial_NoExceptionEscapes() {
+        Microservice failing = new FailingMicroservice("FAIL");
+        AsyncProcessor processor = new AsyncProcessor();
+        CompletableFuture<List<String>> future = processor.processAsyncFailPartial(
+            List.of(failing), List.of("msg1"));
+        assertDoesNotThrow(() -> future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    }
     // TODO: Add tests for Fail-Soft policy (Task C)
 }
