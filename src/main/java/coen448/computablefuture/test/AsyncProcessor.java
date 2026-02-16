@@ -49,7 +49,27 @@ public class AsyncProcessor {
                 .map(CompletableFuture::join)
                 .collect(Collectors.joining(" ")));
     }
+    ////////////////////////////////////////////////////////////////////
     // TODO: Task B - Implement processAsyncFailPartial (Fail-Partial policy)
-    
+        /**
+     * Task B - Fail-Partial (Best-Effort Policy)
+     * Successful services return results, failed services are excluded.
+     */
+    public CompletableFuture<List<String>> processAsyncFailPartial(
+            List<Microservice> services, 
+            List<String> messages) {
+        
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        for (int i = 0; i < services.size(); i++) {
+            futures.add(services.get(i).retrieveAsync(messages.get(i))
+                .exceptionally(ex -> null));
+        }
+        
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            .thenApply(v -> futures.stream()
+                .map(CompletableFuture::join)
+                .filter(result -> result != null)
+                .collect(Collectors.toList()));
+    }
     // TODO: Task C - Implement processAsyncFailSoft (Fail-Soft policy)
 }
