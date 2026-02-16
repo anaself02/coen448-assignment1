@@ -30,7 +30,25 @@ public class AsyncProcessor {
     }
     
     // TODO: Task A - Implement processAsyncFailFast (Fail-Fast policy)
-    
+        /**
+     * Task A - Fail-Fast (Atomic Policy)
+     * If any concurrent microservice invocation fails, the entire operation fails 
+     * and no result is produced.
+     */
+    public CompletableFuture<String> processAsyncFailFast(
+            List<Microservice> services, 
+            List<String> messages) {
+        
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        for (int i = 0; i < services.size(); i++) {
+            futures.add(services.get(i).retrieveAsync(messages.get(i)));
+        }
+        
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            .thenApply(v -> futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.joining(" ")));
+    }
     // TODO: Task B - Implement processAsyncFailPartial (Fail-Partial policy)
     
     // TODO: Task C - Implement processAsyncFailSoft (Fail-Soft policy)
