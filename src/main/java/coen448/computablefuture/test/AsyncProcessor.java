@@ -72,4 +72,25 @@ public class AsyncProcessor {
                 .collect(Collectors.toList()));
     }
     // TODO: Task C - Implement processAsyncFailSoft (Fail-Soft policy)
+        /**
+     * Task C - Fail-Soft (Fallback Policy)
+     * All failures are replaced with a predefined fallback value.
+     * The computation never fails.
+     */
+    public CompletableFuture<String> processAsyncFailSoft(
+            List<Microservice> services, 
+            List<String> messages,
+            String fallbackValue) {
+        
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        for (int i = 0; i < services.size(); i++) {
+            futures.add(services.get(i).retrieveAsync(messages.get(i))
+                .exceptionally(ex -> fallbackValue));
+        }
+        
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            .thenApply(v -> futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.joining(" ")));
+    }
 }
